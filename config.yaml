@@ -37,6 +37,22 @@ model:
   pretrained_weights: checkpoints/wespeaker-voxceleb-resnet34/avg_model.pt
   pretraining: WeSpeaker ResNet-34 trained on VoxCeleb2 dev (5994 speakers) with ArcFace
 
+training:
+  dataset: librispeech
+  seeds: [42, 123, 2026]
+  epochs: 15
+  head_warmup_epochs: 1 # backbone frozen while the new classification head settles
+  batch_size: 128
+  crop_s: 2.0
+  lr: 0.001
+  head_lr: 0.01
+  momentum: 0.9
+  weight_decay: 0.0001
+  margin: 0.2 # AAM-Softmax, same margin and scale as the WeSpeaker pretraining
+  scale: 32
+  workers: 10
+
 paths:
+  checkpoints: checkpoints
   embeddings: data/cache/embeddings
   results: results

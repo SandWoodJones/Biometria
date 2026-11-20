@@ -36,6 +36,14 @@ def score_pairs(store, pairs_dir, split):
     return pd.concat(frames, ignore_index=True), excluded
 
 
+def roc_and_eer(scores):
+    """ROC (FMR, TAR) plus the equal error rate and its threshold."""
+    labels = (scores["tipo"] == "genuine").to_numpy()
+    fmr, tar, thresholds = roc_curve(labels, scores["score"], drop_intermediate=False)
+    k = np.nanargmin(np.abs((1 - tar) - fmr))
+    return fmr, tar, float((fmr[k] + 1 - tar[k]) / 2), float(thresholds[k])
+
+
 def error_rates(scores, threshold):
     genuine = scores.loc[scores["tipo"] == "genuine", "score"]
     impostor = scores.loc[scores["tipo"] == "impostor", "score"]
@@ -81,10 +89,7 @@ def main():
     scores, excluded = score_pairs(store, Path(cfg["protocols"]["dir"]) / args.dataset, args.split)
 
     labels = (scores["tipo"] == "genuine").to_numpy()
-    fmr, tar, thresholds = roc_curve(labels, scores["score"], drop_intermediate=False)
-    fnmr = 1 - tar
-    k = np.nanargmin(np.abs(fnmr - fmr))
-    eer, eer_threshold = float((fmr[k] + fnmr[k]) / 2), float(thresholds[k])
+    fmr, tar, eer, eer_threshold = roc_and_eer(scores)
 
     if args.threshold_from:
         source = json.loads(args.threshold_from.read_text())
@@ -102,6 +107,7 @@ def main():
         "cnn": model["architecture"],
         "pretraining": model["pretraining"],
         "weights": model["weights"],
+        "training": model.get("training"),
         "num_parameters": model["num_parameters"],
         "embedding_dim": model["embedding_dim"],
         "matching": "cosine similarity of L2-normalised embeddings",
