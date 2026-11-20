@@ -14,3 +14,29 @@ protocols:
   split: {train: 0.70, validation: 0.15, test: 0.15}
   genuine_pairs_per_speaker: 100
   impostor_to_genuine_ratio: 10
+
+audio:
+  sample_rate: 16000
+  min_speech_s: 0.5 # less speech than this after VAD counts as a failure to acquire
+
+vad:
+  enabled: true
+  frame_ms: 25
+  hop_ms: 10
+  threshold_db: 40 # frames this far below the loudest frame are silence
+  hangover_ms: 100 # speech regions are widened by this much on each side
+
+features:
+  num_mel_bins: 80
+  frame_length_ms: 25
+  frame_shift_ms: 10
+
+model:
+  architecture: ResNet-34 (WeSpeaker thin ResNet, 32 base channels, temporal statistics pooling)
+  embed_dim: 256
+  pretrained_weights: checkpoints/wespeaker-voxceleb-resnet34/avg_model.pt
+  pretraining: WeSpeaker ResNet-34 trained on VoxCeleb2 dev (5994 speakers) with ArcFace
+
+paths:
+  embeddings: data/cache/embeddings
+  results: results
