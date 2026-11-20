@@ -1,0 +1,16 @@
+seed: 42
+
+datasets:
+  librispeech:
+    root: data/LibriSpeech/train-clean-100
+    speakers_file: data/LibriSpeech/SPEAKERS.TXT
+  vctk:
+    root: data/VCTK-Corpus-0.92/wav48_silence_trimmed
+    speakers_file: data/VCTK-Corpus-0.92/speaker-info.txt
+    mic: mic1
+
+protocols:
+  dir: protocols
+  split: {train: 0.70, validation: 0.15, test: 0.15}
+  genuine_pairs_per_speaker: 100
+  impostor_to_genuine_ratio: 10
