@@ -1,6 +1,7 @@
 """Audio preprocessing: load, resample to 16 kHz mono, energy VAD and log-Mel filterbank features."""
 
 import argparse
+import zlib
 from pathlib import Path
 
 import matplotlib
@@ -20,6 +21,13 @@ def load_audio(path, sample_rate):
     if sr != sample_rate:
         wave = torchaudio.functional.resample(wave, sr, sample_rate)
     return wave
+
+
+def add_noise(wave, snr_db, seed):
+    """Additive white Gaussian noise at `snr_db` relative to the power of the whole utterance."""
+    noise = torch.randn(len(wave), generator=torch.Generator().manual_seed(seed))
+    scale = (wave.pow(2).mean() / (noise.pow(2).mean() * 10 ** (snr_db / 10))).sqrt()
+    return wave + scale * noise
 
 
 def speech_mask(wave, sample_rate, cfg):
@@ -58,6 +66,10 @@ def preprocess(path, cfg):
     """Full pipeline for one file: (frames, mel bins) features, or None on failure to acquire."""
     sr = cfg["audio"]["sample_rate"]
     wave = load_audio(path, sr)
+    if "noise" in cfg:
+        # Seeded by file name, so every model and worker sees the same noise for a given file.
+        seed = zlib.crc32(Path(path).name.encode()) ^ cfg["noise"]["seed"]
+        wave = add_noise(wave, cfg["noise"]["snr_db"], seed)
     if cfg["vad"]["enabled"]:
         wave = wave[speech_mask(wave, sr, cfg["vad"])]
     if len(wave) < cfg["audio"]["min_speech_s"] * sr:

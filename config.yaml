@@ -52,6 +52,10 @@ training:
   scale: 32
   workers: 10
 
+robustness:
+  noise: white Gaussian, added to the waveform before VAD
+  snr_db: [20, 10, 0]
+
 paths:
   checkpoints: checkpoints
   embeddings: data/cache/embeddings

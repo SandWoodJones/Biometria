@@ -96,12 +96,15 @@ def main():
     parser.add_argument("--run", required=True, help="name for this model/pipeline variant, e.g. pretrained")
     parser.add_argument("--weights", help="model weights (default: the pretrained checkpoint from the config)")
     parser.add_argument("--no-vad", action="store_true", help="skip voice activity detection (ablation)")
+    parser.add_argument("--snr-db", type=float, help="add white Gaussian noise at this SNR before VAD (robustness)")
     parser.add_argument("--workers", type=int, default=8)
     args = parser.parse_args()
 
     cfg = yaml.safe_load(Path(args.config).read_text())
     run_cfg = copy.deepcopy(cfg)
     run_cfg["vad"]["enabled"] = not args.no_vad
+    if args.snr_db is not None:
+        run_cfg["noise"] = {"type": cfg["robustness"]["noise"], "snr_db": args.snr_db, "seed": cfg["seed"]}
     weights = Path(args.weights or cfg["model"]["pretrained_weights"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -121,7 +124,7 @@ def main():
     sidecar = weights.with_suffix(".json")
     if sidecar.exists():
         store["model"]["training"] = json.loads(sidecar.read_text())
-    store["pipeline"] = {k: run_cfg[k] for k in ("audio", "vad", "features")}
+    store["pipeline"] = {k: run_cfg[k] for k in ("audio", "vad", "features", "noise") if k in run_cfg}
     store["hardware"] = hardware()
 
     out = Path(cfg["paths"]["embeddings"]) / args.run / args.dataset / f"{args.split}.pt"
