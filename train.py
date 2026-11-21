@@ -21,6 +21,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import yaml
+from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
@@ -80,11 +81,16 @@ class TrainCrops(Dataset):
         return fbank(wave[start : start + self.crop], sr, self.cfg["features"]), self.labels[i]
 
 
-def validation_eer(model, cfg, dataset, device, workers):
+def validation_metrics(model, cfg, dataset, device, workers):
+    """Validation EER and AUC; the AUC breaks ties, since the EER moves in steps of one pair."""
     paths = pd.read_csv(Path(cfg["protocols"]["dir"]) / dataset / "validation.csv")["path"].tolist()
     store = embed_files(model, paths, cfg["datasets"][dataset]["root"], cfg, device, workers, "validation")
     scores, _ = score_pairs(store, Path(cfg["protocols"]["dir"]) / dataset, "validation")
-    return roc_and_eer(scores)[2]
+    return roc_and_eer(scores)[2], float(roc_auc_score(scores["tipo"] == "genuine", scores["score"]))
+
+
+def selection_key(entry):
+    return round(entry["validation_eer"], 9), -entry["validation_auc"]
 
 
 def seed_everything(seed):
@@ -144,8 +150,9 @@ def main():
 
     out_dir = Path(cfg["paths"]["checkpoints"]) / run
     out_dir.mkdir(parents=True, exist_ok=True)
-    history = [{"epoch": 0, "validation_eer": validation_eer(model, cfg, dataset, device, tcfg["workers"])}]
-    print(f"epoch 0 (pretrained): validation EER {100 * history[0]['validation_eer']:.3f}%")
+    eer, auc = validation_metrics(model, cfg, dataset, device, tcfg["workers"])
+    history = [{"epoch": 0, "validation_eer": eer, "validation_auc": auc}]
+    print(f"epoch 0 (pretrained): validation EER {100 * eer:.3f}%, AUC {auc:.5f}")
     best = None
 
     for epoch in range(1, tcfg["epochs"] + 1):
@@ -165,7 +172,7 @@ def main():
             losses.append(loss.item())
             accuracies.append(accuracy.item())
 
-        eer = validation_eer(model, cfg, dataset, device, tcfg["workers"])
+        eer, auc = validation_metrics(model, cfg, dataset, device, tcfg["workers"])
         history.append(
             {
                 "epoch": epoch,
@@ -173,15 +180,16 @@ def main():
                 "train_loss": float(np.mean(losses)),
                 "train_accuracy": float(np.mean(accuracies)),
                 "validation_eer": eer,
+                "validation_auc": auc,
                 "epoch_minutes": (time.perf_counter() - start) / 60,
             }
         )
         print(
             f"epoch {epoch}{' (head only)' if frozen else ''}: loss {history[-1]['train_loss']:.3f}, "
-            f"acc {100 * history[-1]['train_accuracy']:.1f}%, validation EER {100 * eer:.3f}%, "
+            f"acc {100 * history[-1]['train_accuracy']:.1f}%, validation EER {100 * eer:.3f}%, AUC {auc:.5f}, "
             f"{history[-1]['epoch_minutes']:.1f} min"
         )
-        if not frozen and (best is None or eer < best["validation_eer"]):
+        if not frozen and (best is None or selection_key(history[-1]) < selection_key(best)):
             best = history[-1]
             torch.save(model.state_dict(), out_dir / "best.pt")
 
@@ -191,6 +199,8 @@ def main():
         "seed": args.seed,
         "best_epoch": best["epoch"],
         "best_validation_eer": best["validation_eer"],
+        "best_validation_auc": best["validation_auc"],
+        "selection": "lowest validation EER, ties broken by highest validation AUC",
         "hyperparameters": tcfg,
         "trainable_layers": "all (backbone frozen during head warm-up epochs)",
     }
