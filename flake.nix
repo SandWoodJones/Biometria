@@ -31,8 +31,14 @@
           uv
           ffmpeg
           sox
-          typst
           git
+
+          typst
+          tinymist
+          typstyle
+          ltex-ls-plus
+          tombi
+          zathura
         ];
 
         env = {
@@ -45,6 +51,8 @@
         };
 
         shellHook = ''
+          unset SOURCE_DATE_EPOCH
+          export TYPST_ROOT="$PWD"
           if [ ! -d .venv ]; then
             uv venv --quiet .venv
           fi

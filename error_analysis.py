@@ -2,8 +2,9 @@
 
 Selects the highest-scoring false matches (one per speaker pair) and the lowest-scoring false non-matches
 (no file repeated), then records acoustic measurements for each file and whether the other models make
-the same error. Writes cases.csv, chapter_scores.csv, summary.json and one figure per case to
-results/error_analysis/<run>_<dataset>_<split>/. Figure labels are in Portuguese for the article.
+the same error. Writes cases.csv, chapter_scores.csv, summary.json, one figure per case and overview.png,
+which shows every case at once, to results/error_analysis/<run>_<dataset>_<split>/. Figure labels are in
+Portuguese for the article.
 """
 
 import argparse
@@ -22,7 +23,7 @@ import yaml
 
 from preprocess import fbank, load_audio, speech_mask
 
-KINDS = {"false_match": "Falso match", "false_non_match": "Falso non-match"}
+KINDS = {"false_match": "Falsa correspondência", "false_non_match": "Falsa não correspondência"}
 RAMP = LinearSegmentedColormap.from_list("blue", ["#fcfcfb", "#9ec5f4", "#2a78d6", "#0d366b"])
 SPEECH, SILENCE, TEXT, MUTED = "#2a78d6", "#c3c2b7", "#0b0b0b", "#52514e"
 
@@ -104,8 +105,42 @@ def plot_case(case, root, cfg, path):
         for spine in ax.spines.values():
             spine.set_visible(False)
     score, threshold = (f"{case[k]:.3f}".replace(".", ",") for k in ("score", "threshold"))
-    fig.suptitle(f"{KINDS[case['kind']]}: score {score}, limiar {threshold}", x=0.01, ha="left", fontsize=11, color=TEXT)
+    fig.suptitle(f"{KINDS[case['kind']]}: escore {score}, limiar {threshold}", x=0.01, ha="left", fontsize=11, color=TEXT)
     fig.savefig(path, dpi=180, facecolor="white")
+    plt.close(fig)
+
+
+def plot_overview(cases, root, cfg, path, seconds=5):
+    """Log-Mel of the first seconds of speech of both samples of every case, one column per error type."""
+    sr = cfg["audio"]["sample_rate"]
+    shift = cfg["features"]["frame_shift_ms"] / 1000
+    rows = int(cases["kind"].value_counts().max())
+    fig = plt.figure(figsize=(10, 1.65 * rows + 0.3), constrained_layout=True)
+    panels = fig.subfigures(rows, len(KINDS), squeeze=False)
+    for column, kind in enumerate(KINDS):
+        for row, (_, case) in enumerate(cases[cases["kind"] == kind].iterrows()):
+            score, threshold = (f"{case[k]:.3f}".replace(".", ",") for k in ("score", "threshold"))
+            panels[row, column].suptitle(f"{KINDS[kind]} {row + 1}: escore {score}, limiar {threshold}", x=0.02, ha="left", fontsize=9.5, color=TEXT)
+            axes = panels[row, column].subplots(2, 1, sharex=True)
+            for ax, sample, side in zip(axes, (case["amostra_1"], case["amostra_2"]), "ab"):
+                wave = load_audio(root / sample, sr)
+                feats = fbank(wave[speech_mask(wave, sr, cfg["vad"])], sr, cfg["features"])
+                ax.imshow(
+                    feats.T, origin="lower", aspect="auto", interpolation="nearest", cmap=RAMP,
+                    extent=(0, len(feats) * shift, 0, feats.shape[1]), vmin=-12, vmax=12,
+                )
+                ax.set_xlim(0, seconds)
+                ax.set_yticks([])
+                ax.text(
+                    0.008, 0.9, f"{Path(sample).stem} ({case[f'{side}_gender']})", transform=ax.transAxes, va="top", fontsize=7.5,
+                    color=TEXT, bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.5, "alpha": 0.9},
+                )
+                ax.tick_params(colors=MUTED, labelsize=7.5, length=0)
+                for spine in ax.spines.values():
+                    spine.set_visible(False)
+            if row == rows - 1:
+                axes[1].set_xlabel("tempo de fala, após o VAD (s)", color=MUTED, fontsize=8)
+    fig.savefig(path, dpi=200, facecolor="white")
     plt.close(fig)
 
 
@@ -166,6 +201,7 @@ def main():
     for kind, group in cases.groupby("kind"):
         for i, (_, case) in enumerate(group.iterrows(), 1):
             plot_case(case, root, cfg, out / f"{kind}_{i}.png")
+    plot_overview(cases, root, cfg, out / "overview.png")
 
     speaker_pairs = false_matches.apply(lambda r: "-".join(sorted((r["a_speaker"], r["b_speaker"]))), axis=1)
     summary = {

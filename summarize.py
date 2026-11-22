@@ -29,16 +29,17 @@ CONDITIONS = [
 ]
 ROBUSTNESS = [("librispeech_test", "Limpo"), ("snr20", "20 dB"), ("snr10", "10 dB"), ("snr0", "0 dB")]
 PERCENT = {"eer": "EER", "fmr": "FMR", "fnmr": "FNMR", "tar_at_far_1pct": "TAR@FAR=1%", "fta": "FTA"}
-MODEL_LABELS = {"pretrained": "Pré-treinado", "finetuned": "Fine-tuned"}
-# Typst name, condition, dataset label of the standardized table (section 26 of the assignment)
+MODEL_LABELS = {"pretrained": "Pré-treinado", "finetuned": "Ajustado"}
+# Conditions in the per-condition table; the clean test sets are in the standardized table
+RESULT_CONDITIONS = ("snr20", "snr10", "snr0", "no_vad")
+# Condition and dataset label of the standardized table (section 26 of the assignment)
 STANDARD = [
-    ("tabela_padronizada_librispeech", "librispeech_test", "LibriSpeech train-clean-100, teste"),
-    ("tabela_padronizada_vctk", "vctk_test", "VCTK 0.92 (mic1), teste (cross-dataset)"),
+    ("librispeech_test", "LibriSpeech train-clean-100, teste"),
+    ("vctk_test", "VCTK 0.92 (mic1), teste"),
 ]
-STANDARD_FIELDS = [
-    "Modalidade", "Dataset", "CNN", "Pré-treinamento", "Nº de parâmetros", "Dimensão do embedding", "Matching", "Threshold",
-    "EER (%)", "AUC", "FMR (%)", "FNMR (%)", "TAR\\@FAR=1% (%)", "FTA (%)", "Pré-processamento (ms/amostra)",
-    "Embedding (ms/amostra)", "Tamanho do modelo (MB)", "Hardware",
+STANDARD_MEASURED = [
+    "Threshold", "EER (%)", "AUC", "FMR (%)", "FNMR (%)", "TAR\\@FAR=1% (%)", "FTA (%)",
+    "Pré-processamento com leitura (ms/amostra)", "Embedding (ms/amostra)",
 ]
 COLORS = {"pretrained": "#2a78d6", "finetuned": "#eb6834"}
 MARKERS = {"pretrained": "o", "finetuned": "s"}
@@ -115,53 +116,63 @@ def typst_table(name, columns, rows, text_columns=2):
     )
 
 
-def standard_table(name, condition, dataset, metrics, results, seeds):
-    directory = next(c[3] for c in CONDITIONS if c[0] == condition)
-    summary = metrics[metrics["condition"] == condition].set_index("model")
+def standard_table(metrics, results, seeds):
+    """Section 26 fields for both datasets; values shared by every column span the whole row."""
     columns = []
-    for model, runs in (("pretrained", ["pretrained"]), ("finetuned", [f"finetuned_seed{s}" for s in seeds])):
-        loaded = [read_metrics(results, run, directory) for run in runs]
-        row = summary.loc[model]
-        stat = lambda field, digits: with_std(row[f"{field}_mean"], row[f"{field}_std"], digits)
-        time = lambda key: with_std(*aggregate([m["inference_time_ms"][key] for m in loaded]), 1)
-        hardware = loaded[0]["hardware"]
-        columns.append(
-            [
-                "Voz",
-                dataset,
-                "ResNet-34 (WeSpeaker)",
-                "VoxCeleb2 dev" + (" + fine-tuning no LibriSpeech" if model == "finetuned" else ""),
-                f"{loaded[0]['num_parameters']:,}".replace(",", " "),
-                loaded[0]["embedding_dim"],
-                "Similaridade de cosseno",
-                stat("threshold", 4),
-                stat("eer", 3),
-                stat("auc", 6),
-                stat("fmr", 3),
-                stat("fnmr", 3),
-                stat("tar_at_far_1pct", 3),
-                stat("fta", 3),
-                time("preprocess_mean"),
-                time("embedding_mean"),
-                number(loaded[0]["model_size_mb"], 1),
-                f"{hardware['gpu']}, {hardware['cpu']}".replace("@", "\\@"),
-            ]
-        )
-    rows = [list(row) for row in zip(STANDARD_FIELDS, *columns)]
-    headers = ["Informação", MODEL_LABELS["pretrained"], f"{MODEL_LABELS['finetuned']} ({len(seeds)} seeds)"]
-    return typst_table(name, headers, rows, text_columns=3)
+    for condition, _ in STANDARD:
+        directory = next(c[3] for c in CONDITIONS if c[0] == condition)
+        summary = metrics[metrics["condition"] == condition].set_index("model")
+        for model, runs in (("pretrained", ["pretrained"]), ("finetuned", [f"finetuned_seed{s}" for s in seeds])):
+            loaded = [read_metrics(results, run, directory) for run in runs]
+            row = summary.loc[model]
+            stat = lambda field, digits: with_std(row[f"{field}_mean"], row[f"{field}_std"], digits)
+            time = lambda key: with_std(*aggregate([m["inference_time_ms"][key] for m in loaded]), 1)
+            columns.append(
+                [
+                    stat("threshold", 4),
+                    stat("eer", 3),
+                    stat("auc", 6),
+                    stat("fmr", 3),
+                    stat("fnmr", 3),
+                    stat("tar_at_far_1pct", 3),
+                    stat("fta", 3),
+                    time("preprocess_mean"),
+                    time("embedding_mean"),
+                ]
+            )
+    first = read_metrics(results, "pretrained", "librispeech_test")
+    hardware = f"{first['hardware']['gpu']}, {first['hardware']['cpu']}".replace("@", "\\@")
+    spanned = lambda label, value: f"  [{label}], table.cell(colspan: 4, align: center)[{value}]"
+    measured = ["  " + ", ".join(f"[{cell}]" for cell in row) for row in zip(STANDARD_MEASURED, *columns)]
+    rows = [
+        spanned("Modalidade", "Voz"),
+        spanned("CNN", "ResNet-34 (WeSpeaker)"),
+        spanned("Pré-treinamento", "VoxCeleb2 dev (ajustado: + LibriSpeech)"),
+        spanned("Nº de parâmetros", f"{first['num_parameters']:,}".replace(",", ".")),
+        spanned("Dimensão do embedding", first["embedding_dim"]),
+        spanned("Matching", "Similaridade de cosseno"),
+        *measured,
+        spanned("Tamanho do modelo (MB)", number(first["model_size_mb"], 1)),
+        spanned("Hardware", hardware),
+    ]
+    datasets = ", ".join(f"table.cell(colspan: 2, align: center)[*{label}*]" for _, label in STANDARD)
+    models = f"[*{MODEL_LABELS['pretrained']}*], [*{MODEL_LABELS['finetuned']} ({len(seeds)} seeds)*]"
+    return (
+        "#let tabela_padronizada = table(\n  columns: 5,\n  align: (left, right, right, right, right),\n"
+        f"  table.header([*Dataset*], {datasets},\n    [*Modelo*], {models}, {models}),\n" + ",\n".join(rows) + ",\n)\n"
+    )
 
 
 def write_typst(metrics, efficiency, standard, path):
     fields = ("eer", "fmr", "fnmr", "tar_at_far_1pct")
     result_rows = [
         [r.label, MODEL_LABELS[r.model], *(with_std(getattr(r, f"{f}_mean"), getattr(r, f"{f}_std"), 3) for f in fields)]
-        for r in metrics.itertuples()
+        for r in metrics[metrics["condition"].isin(RESULT_CONDITIONS)].itertuples()
     ]
     efficiency_rows = [
         [
             MODEL_LABELS[r.model],
-            f"{r.num_parameters:,}".replace(",", " "),
+            f"{r.num_parameters:,}".replace(",", "."),
             r.embedding_dim,
             number(r.model_size_mb, 1),
             with_std(r.preprocess_ms_mean, r.preprocess_ms_std, 1),
@@ -174,7 +185,8 @@ def write_typst(metrics, efficiency, standard, path):
         + typst_table("tabela_resultados", ["Condição", "Modelo", "EER (%)", "FMR (%)", "FNMR (%)", "TAR\\@FAR=1% (%)"], result_rows)
         + "\n"
         + typst_table("tabela_eficiencia", ["Modelo", "Parâmetros", "Embedding", "Tamanho (MB)", "Pré-proc. (ms)", "Embedding (ms)"], efficiency_rows)
-        + "".join("\n" + table for table in standard)
+        + "\n"
+        + standard
     )
 
 
@@ -194,6 +206,7 @@ def plot_robustness(metrics, path):
         ax.set_xlabel("Nível de ruído branco", color=MUTED)
         ax.set_ylabel("%", color=MUTED)
         ax.set_ylim(bottom=0)
+        ax.yaxis.set_major_formatter(lambda value, _: f"{value:g}".replace(".", ","))
         ax.grid(axis="y", color=GRID, linewidth=0.8)
         ax.set_axisbelow(True)
         ax.tick_params(colors=MUTED, length=0)
@@ -220,8 +233,7 @@ def main():
     efficiency = efficiency_table(results, seeds)
     metrics.to_csv(out / "metrics.csv", index=False, float_format="%.6f")
     efficiency.to_csv(out / "efficiency.csv", index=False, float_format="%.6f")
-    standard = [standard_table(name, condition, dataset, metrics, results, seeds) for name, condition, dataset in STANDARD]
-    write_typst(metrics, efficiency, standard, out / "tables.typ")
+    write_typst(metrics, efficiency, standard_table(metrics, results, seeds), out / "tables.typ")
     plot_robustness(metrics, out / "robustness.png")
     print(f"summary -> {out}")
 

@@ -1,0 +1,74 @@
+[language-server.ltex]
+# Filtra os avisos que caem em código Typst, mantendo os do texto.
+command = "python3"
+args = [".helix/ltex-typst.py"]
+
+[language-server.ltex.config.ltex]
+language = "pt-BR"
+dictionary."pt-BR" = [
+  "LibriSpeech",
+  "LibriVox",
+  "VCTK",
+  "VoxCeleb",
+  "VoxCeleb2",
+  "WeSpeaker",
+  "ResNet",
+  "ArcFace",
+  "AAM",
+  "Softmax",
+  "CNN",
+  "CNNs",
+  "VAD",
+  "EER",
+  "FMR",
+  "FNMR",
+  "FTA",
+  "TAR",
+  "FAR",
+  "AUC",
+  "ROC",
+  "SNR",
+  "embedding",
+  "embeddings",
+  "threshold",
+  "thresholds",
+  "matching",
+  "match",
+  "matches",
+  "fine-tuning",
+  "fine-tuned",
+  "cross-dataset",
+  "dataset",
+  "datasets",
+  "score",
+  "scores",
+  "seed",
+  "seeds",
+  "pooling",
+  "log-Mel",
+  "Mel",
+  "corpus",
+  "monocanais",
+  "Câmpus",
+  "Cross",
+  "cross",
+  "tuning",
+  "tuned",
+  "non",
+]
+disabledRules."pt-BR" = [
+  "PT_BARBARISMS_REPLACE_SCRIPT",
+  "DEPOIS_DE_APÓS",
+]
+
+[language-server.tinymist.config]
+# O PDF é gerado por `typst watch artigo/main.typ`.
+exportPdf = "never"
+
+[[language]]
+name = "typst"
+language-servers = ["tinymist", "ltex"]
+formatter = { command = "typstyle" }
+
+[language.soft-wrap]
+enable = true

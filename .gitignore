@@ -2,6 +2,6 @@
 .venv/
 data/
 checkpoints/
-Projeto_Final_Disciplina_Biometria.pdf
+*.pdf
 __pycache__
 *.tar.gz

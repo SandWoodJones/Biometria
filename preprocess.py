@@ -85,15 +85,19 @@ def plot_pipeline(path, cfg, out):
     feats = fbank(wave[mask], sr, cfg["features"])
     t = torch.arange(len(wave)) / sr
 
-    fig, axes = plt.subplots(3, 1, figsize=(10, 7), constrained_layout=True)
+    # Labels are in Portuguese because the figure goes straight into the article.
+    fig, axes = plt.subplots(3, 1, figsize=(10, 5.6), constrained_layout=True)
     axes[0].plot(t, wave, linewidth=0.5)
-    axes[0].set(title=f"Raw waveform, {sr} Hz mono ({Path(path).name})", xlabel="time (s)")
+    axes[0].set(title=f"Forma de onda, {sr / 1000:g} kHz, mono ({Path(path).name})", xlabel="tempo (s)")
     axes[1].plot(t, wave, linewidth=0.5, color="0.7")
-    axes[1].fill_between(t, -1, 1, where=mask.numpy(), alpha=0.25, label="speech")
-    axes[1].set(title="Energy VAD", xlabel="time (s)", ylim=(wave.min(), wave.max()))
+    axes[1].fill_between(t, -1, 1, where=mask.numpy(), alpha=0.25, label="fala")
+    axes[1].set(title="VAD por energia", xlabel="tempo (s)", ylim=(wave.min(), wave.max()))
     axes[1].legend(loc="upper right")
+    for ax in axes[:2]:
+        ax.xaxis.set_major_formatter(lambda value, _: f"{value:g}".replace(".", ","))
+        ax.yaxis.set_major_formatter(lambda value, _: f"{value:g}".replace(".", ","))
     image = axes[2].imshow(feats.T, origin="lower", aspect="auto", interpolation="nearest")
-    axes[2].set(title="Log-Mel filterbank after VAD, mean-normalised", xlabel="frame (10 ms)", ylabel="Mel bin")
+    axes[2].set(title="Log-Mel após o VAD, com a média subtraída", xlabel="quadro (10 ms)", ylabel="banda Mel")
     fig.colorbar(image, ax=axes[2])
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=150)

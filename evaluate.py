@@ -50,11 +50,19 @@ def error_rates(scores, threshold):
     return float((impostor >= threshold).mean()), float((genuine < threshold).mean())
 
 
+def decimal_comma(value, _):
+    return f"{value:g}".replace(".", ",")
+
+
+# Figure labels are in Portuguese because the plots go straight into the article.
 def plot_roc(fmr, tar, eer, path):
     fig, ax = plt.subplots(figsize=(5, 5), constrained_layout=True)
     ax.plot(fmr, tar)
-    ax.plot([eer], [1 - eer], "o", label=f"EER = {100 * eer:.2f}%")
-    ax.set(xscale="log", xlim=(1e-4, 1), ylim=(0, 1.01), xlabel="FMR (log)", ylabel="TAR = 1 - FNMR", title="ROC")
+    ax.plot([eer], [1 - eer], "o", label=f"EER = {100 * eer:.2f}%".replace(".", ","))
+    # The curve hugs the top of the plot, so the vertical axis starts just below its lowest visible point.
+    bottom = min(0.98, np.floor(100 * np.interp(1e-4, fmr, tar)) / 100)
+    ax.set(xscale="log", xlim=(1e-4, 1), ylim=(bottom, 1.001), xlabel="FMR (escala log)", ylabel="TAR = 1 - FNMR", title="Curva ROC")
+    ax.yaxis.set_major_formatter(decimal_comma)
     ax.grid(True, which="both", alpha=0.3)
     ax.legend(loc="lower right")
     fig.savefig(path, dpi=150)
@@ -64,10 +72,12 @@ def plot_roc(fmr, tar, eer, path):
 def plot_distributions(scores, threshold, path):
     fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
     bins = np.linspace(scores["score"].min(), scores["score"].max(), 100)
-    for kind in ("impostor", "genuine"):
-        ax.hist(scores.loc[scores["tipo"] == kind, "score"], bins=bins, density=True, alpha=0.6, label=kind)
-    ax.axvline(threshold, color="k", linestyle="--", label=f"threshold = {threshold:.4f}")
-    ax.set(xlabel="cosine similarity", ylabel="density", title="Genuine vs. impostor scores")
+    for kind, label in (("impostor", "impostor"), ("genuine", "genuíno")):
+        ax.hist(scores.loc[scores["tipo"] == kind, "score"], bins=bins, density=True, alpha=0.6, label=label)
+    ax.axvline(threshold, color="k", linestyle="--", label=f"limiar = {threshold:.4f}".replace(".", ","))
+    ax.set(xlabel="similaridade de cosseno", ylabel="densidade", title="Distribuição de escores genuínos e impostores")
+    ax.xaxis.set_major_formatter(decimal_comma)
+    ax.yaxis.set_major_formatter(decimal_comma)
     ax.legend()
     fig.savefig(path, dpi=150)
     plt.close(fig)
