@@ -1,0 +1,85 @@
+{
+  "modality": "voice",
+  "dataset": "librispeech",
+  "split": "test",
+  "run": "finetuned_seed2026",
+  "cnn": "ResNet-34 (WeSpeaker thin ResNet, 32 base channels, temporal statistics pooling)",
+  "pretraining": "WeSpeaker ResNet-34 trained on VoxCeleb2 dev (5994 speakers) with ArcFace",
+  "weights": "checkpoints/finetuned_seed2026/best.pt",
+  "training": {
+    "base": "WeSpeaker ResNet-34 trained on VoxCeleb2 dev (5994 speakers) with ArcFace",
+    "fine_tuning": "librispeech train split (175 speakers, 19720 utterances), AAM-Softmax",
+    "seed": 2026,
+    "best_epoch": 9,
+    "best_validation_eer": 0.011578947368421078,
+    "best_validation_auc": 0.9974421883656509,
+    "selection": "lowest validation EER, ties broken by highest validation AUC",
+    "hyperparameters": {
+      "dataset": "librispeech",
+      "seeds": [
+        42,
+        123,
+        2026
+      ],
+      "epochs": 15,
+      "head_warmup_epochs": 1,
+      "batch_size": 128,
+      "crop_s": 2.0,
+      "lr": 0.001,
+      "head_lr": 0.01,
+      "momentum": 0.9,
+      "weight_decay": 0.0001,
+      "margin": 0.2,
+      "scale": 32,
+      "workers": 4
+    },
+    "trainable_layers": "all (backbone frozen during head warm-up epochs)"
+  },
+  "num_parameters": 6634336,
+  "embedding_dim": 256,
+  "matching": "cosine similarity of L2-normalised embeddings",
+  "threshold": 0.2988252341747284,
+  "threshold_source": "results/finetuned_seed2026/librispeech_validation/metrics.json",
+  "eer": 0.001815789473684215,
+  "eer_threshold": 0.37268704175949097,
+  "auc": 0.9999883102493076,
+  "fmr": 0.006789473684210527,
+  "fnmr": 0.0002631578947368421,
+  "tar_at_far_1pct": 0.9997368421052631,
+  "fta": 0.0,
+  "num_genuine_pairs": 3800,
+  "num_impostor_pairs": 38000,
+  "excluded_pairs_fta": 0,
+  "inference_time_ms": {
+    "preprocess_mean": 25.089741735824116,
+    "embedding_mean": 31.646532550513225,
+    "embedding_device": "cuda"
+  },
+  "model_size_mb": 25.41,
+  "hardware": {
+    "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+    "torch": "2.11.0+cu130",
+    "gpu": "Tesla T4",
+    "gpu_arch": "Tesla T4",
+    "gpu_memory_gb": 14.6,
+    "gpu_runtime": "CUDA 13.0"
+  },
+  "pipeline": {
+    "audio": {
+      "sample_rate": 16000,
+      "min_speech_s": 0.5
+    },
+    "vad": {
+      "enabled": true,
+      "frame_ms": 25,
+      "hop_ms": 10,
+      "threshold_db": 40,
+      "hangover_ms": 100
+    },
+    "features": {
+      "num_mel_bins": 80,
+      "frame_length_ms": 25,
+      "frame_shift_ms": 10
+    }
+  }
+}

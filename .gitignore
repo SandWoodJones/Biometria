@@ -4,3 +4,4 @@ data/
 checkpoints/
 Projeto_Final_Disciplina_Biometria.pdf
 __pycache__
+*.tar.gz

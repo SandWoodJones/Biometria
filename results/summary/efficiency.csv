@@ -1,0 +1,3 @@
+model,num_parameters,embedding_dim,model_size_mb,preprocess_ms_mean,preprocess_ms_std,embedding_ms_mean,embedding_ms_std,cpu,gpu
+pretrained,6634336,256,25.410000,27.056755,,30.345794,,Intel(R) Xeon(R) CPU @ 2.00GHz,Tesla T4
+finetuned,6634336,256,25.410000,24.609535,0.705367,31.619846,0.024381,Intel(R) Xeon(R) CPU @ 2.00GHz,Tesla T4

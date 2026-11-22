@@ -1,0 +1,45 @@
+{
+  "run": "pretrained",
+  "dataset": "librispeech",
+  "split": "test",
+  "noise": "white Gaussian, added to the waveform before VAD",
+  "threshold_source": "results/pretrained/librispeech_validation/metrics.json",
+  "levels": [
+    {
+      "snr_db": null,
+      "eer": 0.003947368421052644,
+      "auc": 0.9998878047091413,
+      "fmr": 0.012552631578947369,
+      "fnmr": 0.002368421052631579,
+      "tar_at_far_1pct": 0.9976315789473684,
+      "fta": 0.0
+    },
+    {
+      "snr_db": 20,
+      "eer": 0.007105263157894726,
+      "auc": 0.9995461149584488,
+      "fmr": 0.03668421052631579,
+      "fnmr": 0.002631578947368421,
+      "tar_at_far_1pct": 0.9944736842105263,
+      "fta": 0.0
+    },
+    {
+      "snr_db": 10,
+      "eer": 0.013947368421052653,
+      "auc": 0.9987451939058171,
+      "fmr": 0.0565,
+      "fnmr": 0.003947368421052632,
+      "tar_at_far_1pct": 0.983421052631579,
+      "fta": 0.0
+    },
+    {
+      "snr_db": 0,
+      "eer": 0.031578947368421095,
+      "auc": 0.9956076454293629,
+      "fmr": 0.10807894736842105,
+      "fnmr": 0.009210526315789473,
+      "tar_at_far_1pct": 0.9373684210526316,
+      "fta": 0.0
+    }
+  ]
+}

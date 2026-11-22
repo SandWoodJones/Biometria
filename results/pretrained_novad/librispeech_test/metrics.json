@@ -1,0 +1,57 @@
+{
+  "modality": "voice",
+  "dataset": "librispeech",
+  "split": "test",
+  "run": "pretrained_novad",
+  "cnn": "ResNet-34 (WeSpeaker thin ResNet, 32 base channels, temporal statistics pooling)",
+  "pretraining": "WeSpeaker ResNet-34 trained on VoxCeleb2 dev (5994 speakers) with ArcFace",
+  "weights": "checkpoints/wespeaker-voxceleb-resnet34/avg_model.pt",
+  "training": null,
+  "num_parameters": 6634336,
+  "embedding_dim": 256,
+  "matching": "cosine similarity of L2-normalised embeddings",
+  "threshold": 0.39131683111190796,
+  "threshold_source": "results/pretrained_novad/librispeech_validation/metrics.json",
+  "eer": 0.003947368421052644,
+  "eer_threshold": 0.4482499957084656,
+  "auc": 0.9998957894736842,
+  "fmr": 0.012289473684210525,
+  "fnmr": 0.002368421052631579,
+  "tar_at_far_1pct": 0.9976315789473684,
+  "fta": 0.0,
+  "num_genuine_pairs": 3800,
+  "num_impostor_pairs": 38000,
+  "excluded_pairs_fta": 0,
+  "inference_time_ms": {
+    "preprocess_mean": 15.51238271196973,
+    "embedding_mean": 33.126810597883974,
+    "embedding_device": "cuda"
+  },
+  "model_size_mb": 25.41,
+  "hardware": {
+    "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+    "torch": "2.11.0+cu130",
+    "gpu": "Tesla T4",
+    "gpu_arch": "Tesla T4",
+    "gpu_memory_gb": 14.6,
+    "gpu_runtime": "CUDA 13.0"
+  },
+  "pipeline": {
+    "audio": {
+      "sample_rate": 16000,
+      "min_speech_s": 0.5
+    },
+    "vad": {
+      "enabled": false,
+      "frame_ms": 25,
+      "hop_ms": 10,
+      "threshold_db": 40,
+      "hangover_ms": 100
+    },
+    "features": {
+      "num_mel_bins": 80,
+      "frame_length_ms": 25,
+      "frame_shift_ms": 10
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "run": "finetuned_seed42",
+  "dataset": "librispeech",
+  "split": "test",
+  "noise": "white Gaussian, added to the waveform before VAD",
+  "threshold_source": "results/finetuned_seed42/librispeech_validation/metrics.json",
+  "levels": [
+    {
+      "snr_db": null,
+      "eer": 0.0021052631578947767,
+      "auc": 0.9999811149584487,
+      "fmr": 0.006236842105263158,
+      "fnmr": 0.0013157894736842105,
+      "tar_at_far_1pct": 0.9997368421052631,
+      "fta": 0.0
+    },
+    {
+      "snr_db": 20,
+      "eer": 0.005065789473684246,
+      "auc": 0.9998314750692521,
+      "fmr": 0.04297368421052632,
+      "fnmr": 0.0013157894736842105,
+      "tar_at_far_1pct": 0.9968421052631579,
+      "fta": 0.0
+    },
+    {
+      "snr_db": 10,
+      "eer": 0.0094736842105263,
+      "auc": 0.9992940720221607,
+      "fmr": 0.1201578947368421,
+      "fnmr": 0.0013157894736842105,
+      "tar_at_far_1pct": 0.9905263157894737,
+      "fta": 0.0
+    },
+    {
+      "snr_db": 0,
+      "eer": 0.029973684210526375,
+      "auc": 0.9962445498614958,
+      "fmr": 0.43007894736842106,
+      "fnmr": 0.0,
+      "tar_at_far_1pct": 0.9344736842105263,
+      "fta": 0.0
+    }
+  ]
+}
