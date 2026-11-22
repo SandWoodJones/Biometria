@@ -30,6 +30,16 @@ CONDITIONS = [
 ROBUSTNESS = [("librispeech_test", "Limpo"), ("snr20", "20 dB"), ("snr10", "10 dB"), ("snr0", "0 dB")]
 PERCENT = {"eer": "EER", "fmr": "FMR", "fnmr": "FNMR", "tar_at_far_1pct": "TAR@FAR=1%", "fta": "FTA"}
 MODEL_LABELS = {"pretrained": "Pré-treinado", "finetuned": "Fine-tuned"}
+# Typst name, condition, dataset label of the standardized table (section 26 of the assignment)
+STANDARD = [
+    ("tabela_padronizada_librispeech", "librispeech_test", "LibriSpeech train-clean-100, teste"),
+    ("tabela_padronizada_vctk", "vctk_test", "VCTK 0.92 (mic1), teste (cross-dataset)"),
+]
+STANDARD_FIELDS = [
+    "Modalidade", "Dataset", "CNN", "Pré-treinamento", "Nº de parâmetros", "Dimensão do embedding", "Matching", "Threshold",
+    "EER (%)", "AUC", "FMR (%)", "FNMR (%)", "TAR\\@FAR=1% (%)", "FTA (%)", "Pré-processamento (ms/amostra)",
+    "Embedding (ms/amostra)", "Tamanho do modelo (MB)", "Hardware",
+]
 COLORS = {"pretrained": "#2a78d6", "finetuned": "#eb6834"}
 MARKERS = {"pretrained": "o", "finetuned": "s"}
 TEXT, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
@@ -95,16 +105,54 @@ def with_std(mean, std, digits):
     return number(mean, digits) if np.isnan(std) else f"{number(mean, digits)} ± {number(std, digits)}"
 
 
-def typst_table(name, columns, rows):
+def typst_table(name, columns, rows, text_columns=2):
     cells = ",\n".join("  " + ", ".join(f"[{cell}]" for cell in row) for row in rows)
     header = ", ".join(f"[*{column}*]" for column in columns)
+    align = ["left"] * text_columns + ["right"] * (len(columns) - text_columns)
     return (
-        f"#let {name} = table(\n  columns: {len(columns)},\n  align: (left, left, {', '.join(['right'] * (len(columns) - 2))}),\n"
+        f"#let {name} = table(\n  columns: {len(columns)},\n  align: ({', '.join(align)}),\n"
         f"  table.header({header}),\n{cells},\n)\n"
     )
 
 
-def write_typst(metrics, efficiency, path):
+def standard_table(name, condition, dataset, metrics, results, seeds):
+    directory = next(c[3] for c in CONDITIONS if c[0] == condition)
+    summary = metrics[metrics["condition"] == condition].set_index("model")
+    columns = []
+    for model, runs in (("pretrained", ["pretrained"]), ("finetuned", [f"finetuned_seed{s}" for s in seeds])):
+        loaded = [read_metrics(results, run, directory) for run in runs]
+        row = summary.loc[model]
+        stat = lambda field, digits: with_std(row[f"{field}_mean"], row[f"{field}_std"], digits)
+        time = lambda key: with_std(*aggregate([m["inference_time_ms"][key] for m in loaded]), 1)
+        hardware = loaded[0]["hardware"]
+        columns.append(
+            [
+                "Voz",
+                dataset,
+                "ResNet-34 (WeSpeaker)",
+                "VoxCeleb2 dev" + (" + fine-tuning no LibriSpeech" if model == "finetuned" else ""),
+                f"{loaded[0]['num_parameters']:,}".replace(",", " "),
+                loaded[0]["embedding_dim"],
+                "Similaridade de cosseno",
+                stat("threshold", 4),
+                stat("eer", 3),
+                stat("auc", 6),
+                stat("fmr", 3),
+                stat("fnmr", 3),
+                stat("tar_at_far_1pct", 3),
+                stat("fta", 3),
+                time("preprocess_mean"),
+                time("embedding_mean"),
+                number(loaded[0]["model_size_mb"], 1),
+                f"{hardware['gpu']}, {hardware['cpu']}".replace("@", "\\@"),
+            ]
+        )
+    rows = [list(row) for row in zip(STANDARD_FIELDS, *columns)]
+    headers = ["Informação", MODEL_LABELS["pretrained"], f"{MODEL_LABELS['finetuned']} ({len(seeds)} seeds)"]
+    return typst_table(name, headers, rows, text_columns=3)
+
+
+def write_typst(metrics, efficiency, standard, path):
     fields = ("eer", "fmr", "fnmr", "tar_at_far_1pct")
     result_rows = [
         [r.label, MODEL_LABELS[r.model], *(with_std(getattr(r, f"{f}_mean"), getattr(r, f"{f}_std"), 3) for f in fields)]
@@ -126,6 +174,7 @@ def write_typst(metrics, efficiency, path):
         + typst_table("tabela_resultados", ["Condição", "Modelo", "EER (%)", "FMR (%)", "FNMR (%)", "TAR\\@FAR=1% (%)"], result_rows)
         + "\n"
         + typst_table("tabela_eficiencia", ["Modelo", "Parâmetros", "Embedding", "Tamanho (MB)", "Pré-proc. (ms)", "Embedding (ms)"], efficiency_rows)
+        + "".join("\n" + table for table in standard)
     )
 
 
@@ -171,7 +220,8 @@ def main():
     efficiency = efficiency_table(results, seeds)
     metrics.to_csv(out / "metrics.csv", index=False, float_format="%.6f")
     efficiency.to_csv(out / "efficiency.csv", index=False, float_format="%.6f")
-    write_typst(metrics, efficiency, out / "tables.typ")
+    standard = [standard_table(name, condition, dataset, metrics, results, seeds) for name, condition, dataset in STANDARD]
+    write_typst(metrics, efficiency, standard, out / "tables.typ")
     plot_robustness(metrics, out / "robustness.png")
     print(f"summary -> {out}")
 
