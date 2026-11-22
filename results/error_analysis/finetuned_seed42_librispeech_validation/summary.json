@@ -1,0 +1,29 @@
+{
+  "run": "finetuned_seed42",
+  "dataset": "librispeech",
+  "split": "validation",
+  "threshold": 0.3139110505580902,
+  "num_false_matches": 439,
+  "num_false_non_matches": 44,
+  "false_matches_by_gender_pair": {
+    "MM": 269,
+    "FF": 146,
+    "FM": 18,
+    "MF": 6
+  },
+  "false_matches_by_speaker_pair": {
+    "7505-8425": 58,
+    "3214-3857": 44,
+    "5808-8629": 26,
+    "4680-7078": 25,
+    "3168-412": 24,
+    "1963-200": 23,
+    "2002-8425": 23,
+    "4051-8465": 20,
+    "1098-4051": 18,
+    "3168-8629": 17
+  },
+  "false_non_matches_by_speaker": {
+    "118": 44
+  }
+}
