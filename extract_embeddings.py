@@ -91,7 +91,7 @@ def hardware():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="config.yaml")
-    parser.add_argument("--dataset", required=True, choices=["librispeech", "vctk"])
+    parser.add_argument("--dataset", required=True, choices=["librispeech", "vctk", "vctk_dupla7"])
     parser.add_argument("--split", required=True, choices=["train", "validation", "test"])
     parser.add_argument("--run", required=True, help="name for this model/pipeline variant, e.g. pretrained")
     parser.add_argument("--weights", help="model weights (default: the pretrained checkpoint from the config)")
@@ -110,7 +110,9 @@ def main():
 
     model = load_model(weights, cfg["model"]["embed_dim"]).to(device)
     paths = pd.read_csv(Path(cfg["protocols"]["dir"]) / args.dataset / f"{args.split}.csv")["path"].tolist()
-    store = embed_files(model, paths, cfg["datasets"][args.dataset]["root"], run_cfg, device, args.workers, f"{args.dataset}/{args.split}")
+    # Imported protocols point at the audio of the dataset they were made for.
+    base = cfg.get("external_protocols", {}).get(args.dataset, {}).get("dataset", args.dataset)
+    store = embed_files(model, paths, cfg["datasets"][base]["root"], run_cfg, device, args.workers, f"{args.dataset}/{args.split}")
 
     store["model"] = {
         "architecture": cfg["model"]["architecture"],

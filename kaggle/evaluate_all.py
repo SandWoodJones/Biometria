@@ -93,12 +93,32 @@ def download(url, path, size):
         raise RuntimeError("VCTK download did not complete")
 
 
-def download_vctk(cfg):
-    """Fetch VCTK and keep only the test files; zipfile checks the CRC of everything it extracts."""
+def vctk_from_input(cfg, protocols, target):
+    """Copy VCTK files from an attached Kaggle dataset (a tar or its unpacked folder), checked against sha256.csv."""
+    for archive in INPUT.rglob("*.tar"):
+        with tarfile.open(archive) as tar:
+            tar.extractall(target.parent, filter="data")
+    for found in INPUT.rglob(target.name):
+        if found.is_dir():
+            shutil.copytree(found, target, dirs_exist_ok=True)
+    for name in protocols:
+        manifest = Path(cfg["protocols"]["dir"]) / name / "sha256.csv"
+        if manifest.exists():
+            for row in pd.read_csv(manifest).itertuples():
+                if (target / row.path).exists() and sha256(target / row.path) != row.sha256:
+                    sys.exit(f"{row.path} from the attached input does not match {manifest}")
+
+
+def download_vctk(cfg, protocols=("vctk",)):
+    """Fetch VCTK and keep only the test files of the given protocols; zipfile checks the CRC of everything it extracts."""
     root = Path(cfg["datasets"]["vctk"]["root"])
-    paths = pd.read_csv(Path(cfg["protocols"]["dir"]) / "vctk" / "test.csv")["path"].tolist()
+    paths = sorted({p for name in protocols for p in pd.read_csv(Path(cfg["protocols"]["dir"]) / name / "test.csv")["path"]})
     target = DATA_DIR / root.relative_to("data")
     if all((target / p).exists() for p in paths):
+        return
+    vctk_from_input(cfg, protocols, target)
+    if all((target / p).exists() for p in paths):
+        print(f"VCTK: {len(paths)} test files from the attached input", flush=True)
         return
     outer_path = DATA_DIR / "DS_10283_3443.zip"
     print("downloading VCTK", flush=True)

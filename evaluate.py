@@ -87,7 +87,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--run", required=True)
-    parser.add_argument("--dataset", required=True, choices=["librispeech", "vctk"])
+    parser.add_argument("--dataset", required=True, choices=["librispeech", "vctk", "vctk_dupla7"])
     parser.add_argument("--split", required=True, choices=["validation", "test"])
     parser.add_argument("--threshold-from", type=Path, help="validation metrics.json whose threshold is applied")
     args = parser.parse_args()

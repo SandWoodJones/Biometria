@@ -52,6 +52,14 @@ training:
   scale: 32
   workers: 10
 
+# Test pairs made by the other voice pair (Dupla 7) for experiment B, imported by import_external_pairs.py
+external_protocols:
+  vctk_dupla7:
+    dataset: vctk
+    repository: mauricegss/projeto-biometria
+    commit: b675e668ad975eb02dec5f6a25d5f52cac5d0c62
+    path: protocols/vctk
+
 robustness:
   noise: white Gaussian, added to the waveform before VAD
   snr_db: [20, 10, 0]
