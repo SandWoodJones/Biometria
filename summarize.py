@@ -1,8 +1,9 @@
 """Aggregate the evaluation runs into the tables and the robustness figure used in the article.
 
 The fine-tuned model is reported as mean and sample standard deviation over the seeds in the config.
-Writes metrics.csv, efficiency.csv, tables.typ and robustness.png to results/summary/. Labels of the
-Typst tables and of the figure are in Portuguese because they go straight into the article.
+Writes metrics.csv, efficiency.csv, tables.typ, robustness.png and robustness_vertical.png (for the
+slides) to results/summary/. Labels of the Typst tables and of the figures are in Portuguese because
+they go straight into the article.
 """
 
 import argparse
@@ -191,9 +192,10 @@ def write_typst(metrics, efficiency, standard, path):
     )
 
 
-def plot_robustness(metrics, path):
+def plot_robustness(metrics, path, vertical=False):
     x = np.arange(len(ROBUSTNESS))
-    fig, axes = plt.subplots(1, 2, figsize=(9, 3.8), constrained_layout=True)
+    shape, size = ((2, 1), (5.5, 6.5)) if vertical else ((1, 2), (9, 3.8))
+    fig, axes = plt.subplots(*shape, figsize=size, constrained_layout=True)
     for ax, field, title in zip(axes, ("eer", "fmr"), ("EER", "FMR no limiar congelado da validação")):
         for model in ("pretrained", "finetuned"):
             rows = metrics[metrics["model"] == model].set_index("condition").loc[[c for c, _ in ROBUSTNESS]]
@@ -236,6 +238,7 @@ def main():
     efficiency.to_csv(out / "efficiency.csv", index=False, float_format="%.6f")
     write_typst(metrics, efficiency, standard_table(metrics, results, seeds), out / "tables.typ")
     plot_robustness(metrics, out / "robustness.png")
+    plot_robustness(metrics, out / "robustness_vertical.png", vertical=True)
     print(f"summary -> {out}")
 
 
