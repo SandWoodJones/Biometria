@@ -3,6 +3,8 @@
   columns: 6,
   align: (left, left, right, right, right, right),
   table.header([*Condição*], [*Modelo*], [*EER (%)*], [*FMR (%)*], [*FNMR (%)*], [*TAR\@FAR=1% (%)*]),
+  [VCTK, pares da Dupla 7], [Pré-treinado], [0,724], [3,020], [0,000], [99,412],
+  [VCTK, pares da Dupla 7], [Ajustado], [0,611 ± 0,046], [4,393 ± 0,530], [0,000 ± 0,000], [99,412 ± 0,000],
   [Ruído, SNR 20 dB], [Pré-treinado], [0,711], [3,668], [0,263], [99,447],
   [Ruído, SNR 20 dB], [Ajustado], [0,529 ± 0,044], [7,154 ± 4,164], [0,096 ± 0,061], [99,684 ± 0,026],
   [Ruído, SNR 10 dB], [Pré-treinado], [1,395], [5,650], [0,395], [98,342],

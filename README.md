@@ -87,7 +87,7 @@ O escore é a similaridade de cosseno entre os embeddings normalizados por L2. O
 ## Ambiente
 
 - Python 3.12, PyTorch 2.11.0 e torchaudio 2.11.0. As versões exatas de todas as bibliotecas estão em [`requirements.txt`](requirements.txt) e `uv.lock`.
-- **O fine-tuning e as avaliações** foram executados no Kaggle: GPU Tesla T4, Intel Xeon @ 2,00 GHz (4 vCPUs), PyTorch 2.11.0+cu130 (CUDA 13.0).
+- **O fine-tuning e as avaliações** foram executados no Kaggle: GPU Tesla T4, Intel Xeon @ 2,00 GHz (4 vCPUs), Python 3.13, PyTorch 2.11.0+cu130 (CUDA 13.0).
 - **A validação do modelo `pretrained` e os scripts de análise** foram executados localmente: AMD Ryzen 9 3900X, 16 GB de RAM, AMD Radeon RX 6700 XT, PyTorch 2.11.0+rocm7.2.
 
 O hardware usado em cada avaliação está registrado no respectivo `metrics.json`.
@@ -224,9 +224,12 @@ git clone https://github.com/SandWoodJones/Biometria.git repo
 cd repo
 python kaggle/finetune.py       # fine-tuning, commit 18aec61
 python kaggle/evaluate_all.py   # avaliações, commit 9ca912d
+python kaggle/evaluate_dupla7.py  # pares da Dupla 7 (experimento B), commit 3d4e1ca
 ```
 
 O `evaluate_all.py` precisa da saída do notebook de fine-tuning anexada como entrada.
+
+O `evaluate_dupla7.py` também precisa de um dataset com os áudios de `protocols/vctk_dupla7/test.csv` (arquivo `.tar` conferido contra `sha256.csv`), porque o servidor do VCTK bloqueou o download a partir do Kaggle. Os pares foram importados com `python import_external_pairs.py`.
 
 ## Estrutura do repositório
 

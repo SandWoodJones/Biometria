@@ -99,7 +99,7 @@ Por se originar de gravações feitas pelos próprios leitores, a base apresenta
 
 == VCTK
 
-A VCTK @yamagishi2019vctk reúne gravações em estúdio, a 48 kHz, de 110 falantes de inglês com sotaques variados. Foram utilizadas somente as gravações do `mic1`, pois os locutores p280 e p315 não possuem o `mic2`.
+A VCTK @yamagishi2019vctk reúne gravações em estúdio, a 48 kHz, de 110 falantes de inglês com sotaques variados. No protocolo deste trabalho, foram utilizadas somente as gravações do `mic1`, pois os locutores p280 e p315 não possuem o `mic2`.
 
 Os áudios da versão 0.92 já são distribuídos com o silêncio das bordas removido. Além disso, a duração mediana das falas da VCTK é inferior a um quarto da observada na LibriSpeech. Essas diferenças de duração, de sotaque e de condição de gravação tornam a VCTK adequada para avaliar a capacidade de generalização do modelo.
 
@@ -152,7 +152,7 @@ Na validação e no teste, foram sorteados 100 pares genuínos por locutor e 10 
 
 O protocolo foi gerado com a _seed_ 42, e o _fine-tuning_ foi repetido com as _seeds_ 42, 123 e 2026. Seus resultados são reportados como média e desvio padrão amostral das três execuções.
 
-O treinamento e as avaliações foram executados no Kaggle, com GPU Tesla T4, processador Intel Xeon de 2,00 GHz com 4 vCPUs, Python 3.12, PyTorch 2.11.0 e CUDA 13.0. A única exceção é a validação do modelo pré-treinado, executada em um computador local com AMD Ryzen 9 3900X e GPU AMD Radeon RX 6700 XT.
+O treinamento e as avaliações foram executados no Kaggle, com GPU Tesla T4, processador Intel Xeon de 2,00 GHz com 4 vCPUs, Python 3.13, PyTorch 2.11.0 e CUDA 13.0. A única exceção é a validação do modelo pré-treinado, executada em um computador local com AMD Ryzen 9 3900X e GPU AMD Radeon RX 6700 XT.
 
 == Limiar de decisão
 
@@ -161,6 +161,10 @@ O limiar de cada modelo é o valor de escore correspondente ao EER na validaçã
 == Avaliação entre bases
 
 Na avaliação entre bases, os modelos são aplicados aos pares de teste da VCTK sem nenhum ajuste adicional, mantendo o limiar da validação da LibriSpeech.
+
+== Pares da outra dupla
+
+Para comparar as duas CNNs nos mesmos dados, os modelos também foram avaliados nos pares de teste da VCTK construídos pela Dupla 7 da disciplina, que utiliza a VCTK como base principal. Esses pares envolvem 17 locutores, com 170 pares genuínos e 5.000 impostores, e incluem os dois microfones da base: 71 genuínos e 2.500 impostores comparam uma gravação do `mic1` com uma do `mic2`. Os pares foram importados sem alteração, em um _commit_ fixo do repositório da outra dupla, e avaliados com o mesmo limiar congelado da validação da LibriSpeech.
 
 == Robustez e ablação
 
@@ -195,6 +199,8 @@ Na validação, o EER foi de 1,211% para o modelo pré-treinado e de 1,158 $plus
 
 Na VCTK (@tab:padrao), o EER foi de 0,687% para o modelo pré-treinado e de 0,581 $plus.minus$ 0,038% para o ajustado. Com o limiar congelado, porém, os modelos se comportaram de forma diferente: a FMR do modelo ajustado foi de 3,938 $plus.minus$ 0,435%, contra 1,825% do pré-treinado, enquanto sua FNMR foi de 0,042 $plus.minus$ 0,036%, contra 0,312%.
 
+Nos pares da Dupla 7 (@tab:resultados), o EER foi de 0,724% para o modelo pré-treinado e de 0,611 $plus.minus$ 0,046% para o ajustado. O padrão se repetiu: a FMR do modelo ajustado foi de 4,393 $plus.minus$ 0,530%, contra 3,020% do pré-treinado, e nenhum dos modelos rejeitou pares genuínos no limiar congelado.
+
 == Robustez e ablação
 
 A @tab:resultados e a @fig:robustez mostram o efeito do ruído. O EER aumentou com a degradação nos dois modelos e, em todos os níveis, foi menor no modelo ajustado.
@@ -223,7 +229,7 @@ O modelo possui 6.634.336 parâmetros e ocupa 25,4 MB. No Kaggle, o modelo ajust
 
 Os erros foram analisados no modelo ajustado com a _seed_ 42, escolhida antes da inspeção dos casos. No teste da LibriSpeech, com limiar de 0,314, ocorreram 237 falsas correspondências (_false matches_) e 5 falsas não correspondências (_false non-matches_). Das falsas correspondências, 216 envolvem locutores do mesmo gênero, o que é compatível com uma confusão causada por vozes semelhantes. A @fig:erros apresenta as três falsas correspondências de maior escore e as três falsas não correspondências de menor escore.
 
-A falsa correspondência de maior escore (0,569) compara as amostras 6209-34601-0010 e 8747-293952-0060. Na inspeção auditiva, a primeira aparenta conter o leitor interpretando a voz de um personagem, mas não é possível afirmar que isso tenha causado o erro. Os outros dois casos comparam os locutores 2893 e 6415 (0,483), de gêneros diferentes, e 3486 e 8580 (0,453). Os três erros se repetem nos quatro modelos avaliados. Como todos os áudios têm ao menos 13 s e mais de 84% de fala, a duração é uma causa pouco provável. A hipótese é de semelhança de timbre ou de condição de gravação, que não foi confirmada.
+A falsa correspondência de maior escore (0,569) compara as amostras 6209-34601-0010 e 8747-293952-0060. Na inspeção auditiva, a primeira aparenta conter o leitor interpretando a voz de um personagem, mas não é possível afirmar que isso tenha causado o erro. Os outros dois casos comparam os locutores 2893 e 6415 (0,483), de gêneros diferentes, e 3486 e 8580 (0,453). Como todos os áudios têm ao menos 13 s e mais de 84% de fala, a duração é uma causa pouco provável. A hipótese é de semelhança de timbre ou de condição de gravação, que não foi confirmada.
 
 As cinco falsas não correspondências pertencem ao locutor 6209, e os três casos da figura (0,282, 0,292 e 0,297) comparam os capítulos 34599 e 34601. O capítulo 34601 é pouco consistente até consigo mesmo: seu escore genuíno médio interno é de 0,563, contra 0,871 e 0,874 nos outros dois capítulos do locutor. Na amostra 6209-34601-0029, o leitor aparenta interpretar um personagem em quase todo o áudio e retomar a voz habitual apenas no final, o que sugere variação na voz do próprio locutor.
 
@@ -236,28 +242,17 @@ Na validação, as 44 falsas não correspondências pertencem ao locutor 118 e c
 
 == Avaliação entre bases
 
-Na VCTK, o modelo ajustado manteve um EER inferior ao do pré-treinado, o que indica que o ganho de separação obtido na LibriSpeech se transfere, ao menos em parte, para uma base não vista. O ponto de operação, por outro lado, transferiu-se mal: com o limiar congelado, a FMR do modelo ajustado foi cerca de duas vezes a do pré-treinado. Uma hipótese é que as diferenças de duração, sotaque e condição de gravação desloquem a distribuição de escores, e que o limiar mais baixo do modelo ajustado (0,308, contra 0,388) o torne mais sensível a esse deslocamento.
+Na VCTK, o modelo ajustado manteve um EER inferior ao do pré-treinado, o que indica que o ganho se transfere, ao menos em parte, para uma base não vista. O ponto de operação, por outro lado, transferiu-se mal: com o limiar congelado, a FMR do modelo ajustado foi cerca de duas vezes a do pré-treinado. Uma hipótese é que a mudança de domínio desloque a distribuição de escores e que o limiar mais baixo do modelo ajustado (0,308, contra 0,388) o torne mais sensível a isso.
 
-== Robustez
-
-O ruído degradou os dois modelos de forma gradual, com EER próximo de 3% a 0 dB. O modelo ajustado manteve a melhor separação em todos os níveis, mas sua FMR no limiar congelado cresceu muito mais, com grande variação entre as _seeds_.
-
-== Comparação entre os modelos
-
-O _fine-tuning_ reduziu o EER em todas as condições avaliadas, mas o modelo pré-treinado apresentou FMR menor na VCTK e sob ruído. A escolha entre eles depende, portanto, de o sistema poder recalibrar o limiar para o ambiente de uso.
+Nos pares da Dupla 7, as taxas foram maiores para os dois modelos do que no protocolo deste trabalho, o que é compatível com as comparações entre microfones, hipótese que não foi testada isoladamente.
 
 == Limitações
 
-Como as taxas de erro no teste da LibriSpeech são muito baixas, pequenas diferenças de EER correspondem a poucos pares. O teste da VCTK possui apenas 16 locutores, e foram usadas somente três _seeds_, sem testes de significância estatística. O ruído avaliado é apenas branco e gaussiano, e a ablação do VAD foi realizada somente em gravações limpas, não permitindo concluir sobre seu efeito em ambientes ruidosos. Por fim, as hipóteses da análise de erros baseiam-se em inspeção auditiva de poucas amostras.
+Como as taxas de erro no teste da LibriSpeech são muito baixas, pequenas diferenças de EER correspondem a poucos pares. O teste da VCTK possui apenas 16 locutores, e foram usadas somente três _seeds_, sem testes de significância estatística. O ruído avaliado é apenas branco e gaussiano, e a ablação do VAD foi realizada somente em gravações limpas, não permitindo concluir sobre seu efeito em ambientes ruidosos. Por fim, as hipóteses da análise de erros baseiam-se em inspeção auditiva de poucas amostras. Os pares da Dupla 7 incluem apenas 170 genuínos, de modo que cada um corresponde a 0,59 ponto percentual da FNMR, e as diferenças de EER entre os modelos equivalem a cerca de um par.
 
 = Conclusão
 
-O _fine-tuning_ de uma ResNet-34 pré-treinada reduziu o EER de teste na LibriSpeech de 0,395% para 0,201 $plus.minus$ 0,017% e também resultou em EER menor na VCTK e em todos os níveis de ruído avaliados.
+O _fine-tuning_ de uma ResNet-34 pré-treinada reduziu o EER de teste na LibriSpeech de 0,395% para 0,201 $plus.minus$ 0,017%, mas essa melhora na separação não se traduziu em um ponto de operação mais robusto. Com o limiar congelado na validação, o modelo ajustado aceitou mais impostores que o pré-treinado fora da condição de treinamento. Avaliar um sistema biométrico apenas pelo EER pode, portanto, ocultar problemas de uma aplicação real, e o limiar deve ser calibrado em dados representativos da condição de uso.
 
-O principal achado é que essa melhora na separação não se traduziu em um ponto de operação mais robusto. Com o limiar congelado na validação, o modelo ajustado aceitou mais impostores que o pré-treinado fora da condição de treinamento. Esses resultados indicam que avaliar um sistema biométrico apenas pelo EER pode ocultar problemas que surgem em uma aplicação real, e que o limiar deve ser calibrado em dados representativos da condição de uso.
-
-A análise de erros também mostrou a influência da qualidade dos rótulos e da variação vocal. Como trabalhos futuros, propõe-se investigar a calibração de escores e o aumento de dados com ruído.
-
-*Código:* #link("https://github.com/SandWoodJones/Biometria") (versão avaliada: tag `final-v1.0`).
-
+A análise de erros também mostrou a influência da qualidade dos rótulos e da variação vocal. Como trabalhos futuros, propõe-se investigar a calibração de escores e o aumento de dados com ruído. O código está disponível em #link("https://github.com/SandWoodJones/Biometria") (tag `final-v1.0`).
 #bibliography("refs.bib", title: "Referências", style: "ieee")

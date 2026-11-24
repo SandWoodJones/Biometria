@@ -22,6 +22,7 @@ CONDITIONS = [
     ("librispeech_validation", "LibriSpeech, validação", "", "librispeech_validation"),
     ("librispeech_test", "LibriSpeech, teste", "", "librispeech_test"),
     ("vctk_test", "VCTK, teste (cross-dataset)", "", "vctk_test"),
+    ("vctk_dupla7_test", "VCTK, pares da Dupla 7", "", "vctk_dupla7_test"),
     ("snr20", "Ruído, SNR 20 dB", "_snr20", "librispeech_test"),
     ("snr10", "Ruído, SNR 10 dB", "_snr10", "librispeech_test"),
     ("snr0", "Ruído, SNR 0 dB", "_snr0", "librispeech_test"),
@@ -31,7 +32,7 @@ ROBUSTNESS = [("librispeech_test", "Limpo"), ("snr20", "20 dB"), ("snr10", "10 d
 PERCENT = {"eer": "EER", "fmr": "FMR", "fnmr": "FNMR", "tar_at_far_1pct": "TAR@FAR=1%", "fta": "FTA"}
 MODEL_LABELS = {"pretrained": "Pré-treinado", "finetuned": "Ajustado"}
 # Conditions in the per-condition table; the clean test sets are in the standardized table
-RESULT_CONDITIONS = ("snr20", "snr10", "snr0", "no_vad")
+RESULT_CONDITIONS = ("vctk_dupla7_test", "snr20", "snr10", "snr0", "no_vad")
 # Condition and dataset label of the standardized table (section 26 of the assignment)
 STANDARD = [
     ("librispeech_test", "LibriSpeech train-clean-100, teste"),
