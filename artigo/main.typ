@@ -1,53 +1,24 @@
 // Compilar a partir da raiz do repositório (o artigo importa arquivos de results/):
 //   typst watch --root . artigo/main.typ
 //
-// Layout provisório, até o professor definir o template (SBC ou IEEE).
-// Limite: 6 a 8 páginas, sem contar as referências.
+// Modelo IEEE de conferência (ieee.typ), indicado pela professora.
 
+#import "ieee.typ": ieee
 #import "../results/summary/tables.typ": *
 
-// Nota visível no PDF. Apague cada #todo conforme escrever a parte correspondente.
-#let todo(body) = block(
-  width: 100%,
-  inset: 6pt,
-  fill: rgb("#fff4e5"),
-  stroke: (left: 2pt + rgb("#eb6834")),
-  text(size: 9pt, fill: rgb("#7a3410"))[*A escrever:* #body],
-)
-
-#set document(
+#show: ieee.with(
   title: [Verificação de Locutor com ResNet-34 e _Fine-Tuning_],
-  author: (
-    "Raul Rodrigues",
-    "Paulo Henrique",
+  authors: (
+    (name: "Raul Rodrigues", organization: [Universidade Tecnológica Federal do Paraná], location: [Ponta Grossa, Brasil]),
+    (name: "Paulo Henrique", organization: [Universidade Tecnológica Federal do Paraná], location: [Ponta Grossa, Brasil]),
   ),
+  abstract: [Este trabalho avalia uma ResNet-34 pré-treinada na VoxCeleb2 para verificação de locutor 1:1, antes e depois de um _fine-tuning_ com perda AAM-Softmax na LibriSpeech. As representações vetoriais (_embeddings_) são comparadas por similaridade de cosseno, com limiar de decisão (_threshold_) congelado na validação e protocolo com locutores disjuntos. O ajuste reduziu o EER de teste na LibriSpeech de 0,395% para 0,201 $plus.minus$ 0,017% (média de três _seeds_) e manteve EER menor na VCTK e sob ruído branco de 20, 10 e 0 dB. Com o limiar congelado, porém, a FMR do modelo ajustado foi maior fora da condição de treinamento, chegando a 3,938 $plus.minus$ 0,435% na VCTK, contra 1,825% do modelo pré-treinado. Os resultados indicam que um EER menor não garante um ponto de operação robusto e que o limiar deve ser calibrado para a condição de uso.],
+  index-terms: ("biometria", "verificação de locutor", [_embeddings_], [_fine-tuning_], "redes neurais convolucionais"),
+  bibliography: bibliography("refs.bib"),
+  paper-size: "a4",
 )
-#set page(paper: "a4", margin: 2.5cm, numbering: "1")
-#set text(lang: "pt", region: "br", size: 11pt)
+#set text(lang: "pt", region: "br")
 #set figure(placement: auto)
-#set par(justify: true)
-#set heading(numbering: "1.")
-#set math.equation(numbering: "(1)")
-#show figure.where(kind: table): set figure.caption(position: top)
-#show figure.where(kind: table): set text(size: 8pt)
-#show figure.caption: set text(size: 9pt)
-
-#align(center)[
-  #text(size: 16pt, weight: "bold", context document.title)
-  #v(0.6em)
-  #context document.author.join(", ") \
-  #text(
-    size: 10pt,
-  )[Universidade Tecnológica Federal do Paraná (UTFPR), Câmpus Ponta Grossa]
-]
-
-#v(0.6em)
-
-*Resumo.*
-
-Este trabalho avalia uma ResNet-34 pré-treinada na VoxCeleb2 para verificação de locutor 1:1, antes e depois de um _fine-tuning_ com perda AAM-Softmax na LibriSpeech. As representações vetoriais (_embeddings_) são comparadas por similaridade de cosseno, com limiar de decisão (_threshold_) congelado na validação e protocolo com locutores disjuntos. O ajuste reduziu o EER de teste na LibriSpeech de 0,395% para 0,201 $plus.minus$ 0,017% (média de três _seeds_) e manteve EER menor na VCTK e sob ruído branco de 20, 10 e 0 dB. Com o limiar congelado, porém, a FMR do modelo ajustado foi maior fora da condição de treinamento, chegando a 3,938 $plus.minus$ 0,435% na VCTK, contra 1,825% do modelo pré-treinado. Os resultados indicam que um EER menor não garante um ponto de operação robusto e que o limiar deve ser calibrado para a condição de uso.
-
-*Palavras-chave:* biometria; verificação de locutor; _embeddings_; _fine-tuning_; redes neurais convolucionais.
 
 = Introdução
 
@@ -105,6 +76,7 @@ Os áudios da versão 0.92 já são distribuídos com o silêncio das bordas rem
 
 #figure(
   image("../results/pipeline.png", width: 72%),
+  scope: "parent",
   caption: [Etapas do pré-processamento para a amostra 7190-90543-0043 da LibriSpeech.]
 ) <fig:pipeline>
 
@@ -178,22 +150,23 @@ Como estudo de ablação, o _pipeline_ foi executado sem o VAD. Por se tratar de
 
 A @tab:padrao apresenta os resultados no teste da LibriSpeech. O modelo pré-treinado obteve EER de 0,395%, e o _fine-tuning_ reduziu esse valor para 0,201 $plus.minus$ 0,017%. No limiar congelado, a FMR passou de 1,255% para 0,660 $plus.minus$ 0,031%, e a FNMR, de 0,237% para 0,079 $plus.minus$ 0,053%. Não houve falhas de aquisição em nenhuma condição avaliada.
 
-Na validação, o EER foi de 1,211% para o modelo pré-treinado e de 1,158 $plus.minus$ 0,000% para o ajustado. A @fig:roc-dist mostra a curva ROC e a distribuição de escores.
+Na validação, o EER foi de 1,211% para o modelo pré-treinado e de 1,158 $plus.minus$ 0,000% para o ajustado. As Figs. @fig:roc[] e @fig:dist[] mostram a curva ROC e a distribuição de escores.
 
 #figure(
   tabela_padronizada,
+  scope: "parent",
   caption: [Resultados padronizados no teste da LibriSpeech e da VCTK (avaliação entre bases).],
 ) <tab:padrao>
 
 #figure(
-  grid(
-    columns: 2,
-    gutter: 6pt,
-    image("../results/finetuned_seed42/librispeech_test/roc.png"),
-    image("../results/finetuned_seed42/librispeech_test/distributions.png"),
-  ),
-  caption: [Curva ROC (eixo vertical a partir de 0,98) e distribuição de escores no teste da LibriSpeech (modelo ajustado, _seed_ 42), com o limiar marcado.],
-) <fig:roc-dist>
+  image("../results/finetuned_seed42/librispeech_test/roc.png"),
+  caption: [Curva ROC no teste da LibriSpeech (modelo ajustado, _seed_ 42), com eixo vertical a partir de 0,98.],
+) <fig:roc>
+
+#figure(
+  image("../results/finetuned_seed42/librispeech_test/distributions.png"),
+  caption: [Distribuição de escores no teste da LibriSpeech (modelo ajustado, _seed_ 42), com o limiar marcado.],
+) <fig:dist>
 
 == Avaliação entre bases
 
@@ -211,11 +184,13 @@ Na ablação, a remoção do VAD não alterou o EER do modelo pré-treinado (0,3
 
 #figure(
   tabela_resultados,
+  scope: "parent",
   caption: [Resultados por condição. Modelo ajustado: média ± desvio padrão de 3 _seeds_.],
 ) <tab:resultados>
 
 #figure(
   image("../results/summary/robustness.png", width: 90%),
+  scope: "parent",
   caption: [EER e FMR sob ruído branco aditivo, com o limiar congelado da validação.],
 ) <fig:robustez>
 
@@ -237,6 +212,7 @@ Na validação, as 44 falsas não correspondências pertencem ao locutor 118 e c
 
 #figure(
   image("../results/error_analysis/finetuned_seed42_librispeech_test/overview.png"),
+  scope: "parent",
   caption: [Espectrogramas log-Mel das três falsas correspondências e das três falsas não correspondências analisadas, no teste da LibriSpeech (modelo ajustado, _seed_ 42).],
 ) <fig:erros>
 
@@ -255,4 +231,3 @@ Como as taxas de erro no teste da LibriSpeech são muito baixas, pequenas difere
 O _fine-tuning_ de uma ResNet-34 pré-treinada reduziu o EER de teste na LibriSpeech de 0,395% para 0,201 $plus.minus$ 0,017%, mas essa melhora na separação não se traduziu em um ponto de operação mais robusto. Com o limiar congelado na validação, o modelo ajustado aceitou mais impostores que o pré-treinado fora da condição de treinamento. Avaliar um sistema biométrico apenas pelo EER pode, portanto, ocultar problemas de uma aplicação real, e o limiar deve ser calibrado em dados representativos da condição de uso.
 
 A análise de erros também mostrou a influência da qualidade dos rótulos e da variação vocal. Como trabalhos futuros, propõe-se investigar a calibração de escores e o aumento de dados com ruído. O código está disponível em #link("https://github.com/SandWoodJones/Biometria") (tag `final-v1.0`).
-#bibliography("refs.bib", title: "Referências", style: "ieee")
